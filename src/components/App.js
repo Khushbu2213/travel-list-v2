@@ -6,20 +6,30 @@ import Stats from "./Stats";
 import Popup from "./Popup";
 
 import { useSelector, useDispatch } from "react-redux";
-import { updateItemsArray, addItem, deleteItem, clearItems } from "./itemSlice";
+import {
+  updateItemsArray,
+  addItem,
+  deleteItem,
+  clearItems,
+  updateDesc,
+  setCurrentItem,
+  setShowPopup,
+} from "../slice/itemSlice";
 
 export default function App() {
-  // const [items, setItems] = useState([]);
+  const showPopup = useSelector((state) => state.item.showPopup);
+  const currentItem = useSelector((state) => state.item.currentItem);
 
-  const { items } = useSelector((state) => state.item);
+  const items = useSelector((state) => state.item.items);
+  const editDesc = useSelector((state) => state.item.editDesc);
   const dispatch = useDispatch();
 
   const [popupMessage, setPopupMessage] = useState("");
-  const [showPopup, setShowPopup] = useState(false);
   const [currentUpdatedArray, setCurrentUpdatedArray] = useState([]);
-  const [currentItem, setCurrentItem] = useState("");
 
   const toLowerCase = (x) => x?.toLowerCase().trim();
+  const checkSameId = (item, id) => item.id === id;
+  // const checkExactSameDesc
 
   function handlePopup(popupResult) {
     const existsSameLowercase = items.find(
@@ -41,8 +51,6 @@ export default function App() {
             : item
         );
         dispatch(updateItemsArray(updatedItems));
-        setShowPopup(false);
-        setCurrentItem("");
       } else {
         setShowPopup(true);
         setPopupMessage(
@@ -77,22 +85,16 @@ export default function App() {
             : item
         );
         dispatch(updateItemsArray(updatedItems));
-        setShowPopup(false);
-        setCurrentItem("");
       } else {
         currentItem.packed = true;
         currentItem.description = existsSameLowercase.description;
         dispatch(addItem(currentItem));
-        setShowPopup(false);
-        setCurrentItem("");
       }
     } else if (
       !popupResult &&
       popupMessage.startsWith("This item is already packed.")
     ) {
       dispatch(addItem(currentItem));
-      setShowPopup(false);
-      setCurrentItem("");
     }
 
     /////////////////////////
@@ -115,90 +117,148 @@ export default function App() {
         );
 
         dispatch(updateItemsArray(updatedItems));
-        setShowPopup(false);
-        setCurrentItem("");
       } else {
         currentItem.packed = false;
         currentItem.description = existsSameLowercase.description;
         dispatch(addItem(currentItem));
-        setShowPopup(false);
-        setCurrentItem("");
       }
     }
 
     /////////////////////////
     // For condition when user enters yes for Do u want to merge same item??
     else if (popupResult && popupMessage.startsWith("Do u want to merge")) {
-      const otherItemSmLowerDesc = currentUpdatedArray.find(
-        (item) =>
-          toLowerCase(item.description) ===
-            toLowerCase(currentItem.description) && item.id !== currentItem.id
-      );
+      const otherItemSmLowerDesc = currentUpdatedArray.find((item) => {
+        if (!editDesc) {
+          return (
+            toLowerCase(item.description) ===
+              toLowerCase(currentItem.description) && item.id !== currentItem.id
+          );
+        } else {
+          return (
+            toLowerCase(item.description) === toLowerCase(editDesc) &&
+            item.id !== currentItem.id
+          );
+        }
+      });
+      // console.log(otherItemSmLowerDesc);
 
       const update = currentUpdatedArray
         .map((item) =>
-          item.id === currentItem.id
+          checkSameId(item, currentItem.id)
             ? {
                 ...item,
                 description: otherItemSmLowerDesc.description,
                 quantity: item.quantity + otherItemSmLowerDesc.quantity,
+                isEdited: editDesc ? true : false,
               }
             : item
         )
         .filter((item) => item.id !== otherItemSmLowerDesc.id);
 
+      // console.log(update);
       dispatch(updateItemsArray(update));
-      setShowPopup(false);
       setCurrentUpdatedArray([]);
-      setCurrentItem("");
+      dispatch(updateDesc(""));
     }
 
     /////////////////////////
     // For condition when user enters no for Do u want to merge same item??
     else if (!popupResult && popupMessage.startsWith("Do u want to merge")) {
-      // updateItemArray(currentUpdatedArray);
+      console.log(currentUpdatedArray);
       dispatch(updateItemsArray(currentUpdatedArray));
-      setShowPopup(false);
       setCurrentUpdatedArray([]);
-      setCurrentItem("");
     }
 
     /////////////////////////
     // For condition when user enters yes for Do u want to delete item??
     else if (popupResult && popupMessage.startsWith("Do u want to delete")) {
-      // updateItemArray(currentUpdatedArray);
       dispatch(deleteItem(currentItem.id));
-      setShowPopup(false);
-      setCurrentItem("");
     }
 
     /////////////////////////
     // For condition when user enters no for Do u want to delete item??
     else if (!popupResult && popupMessage.startsWith("Do u want to delete")) {
-      setShowPopup(false);
-      setCurrentItem("");
-      setCurrentItem("");
+      dispatch(setShowPopup(false));
+      dispatch(setCurrentItem(""));
     }
 
     /////////////////////////
     // For condition when user enters yes for Do u want clear all items??
     else if (popupResult && popupMessage.endsWith("the items?")) {
-      setShowPopup(false);
       dispatch(clearItems());
     }
 
     /////////////////////////
     // For condition when user enters no for Do u want clear all items??
     else if (!popupResult && popupMessage.endsWith("the items?")) {
-      setShowPopup(false);
+      dispatch(setShowPopup(false));
+    }
+
+    /////////////////////////
+    // For condition when user enters save for after editing the item?
+    else if (popupResult && popupMessage.includes("Edit")) {
+      const updatedArray = items.map((item) =>
+        checkSameId(item, currentItem.id)
+          ? { ...item, description: editDesc, isEdited: true }
+          : item
+      );
+
+      const otherItemSmDesc = updatedArray.find(
+        (item) => item.description === editDesc && item.id !== currentItem.id
+      );
+      // console.log(otherItemSmDesc);
+
+      const otherItemSmLowerDesc = updatedArray.find(
+        (item) =>
+          toLowerCase(item.description) === toLowerCase(editDesc) &&
+          item.id !== currentItem.id
+      );
+
+      if (otherItemSmDesc && otherItemSmDesc.packed === currentItem.packed) {
+        const update = updatedArray
+          .map((item) =>
+            checkSameId(item, currentItem.id)
+              ? {
+                  ...item,
+                  description: editDesc,
+                  quantity: item.quantity + otherItemSmDesc.quantity,
+                  isEdited: true,
+                }
+              : item
+          )
+          .filter((item) => item.id !== otherItemSmDesc.id);
+
+        // console.log(update);
+        dispatch(updateItemsArray(update));
+        dispatch(updateDesc(""));
+      } else if (
+        otherItemSmLowerDesc &&
+        otherItemSmLowerDesc.packed === currentItem.packed
+      ) {
+        dispatch(setCurrentItem(currentItem));
+        dispatch(setShowPopup(true));
+        setPopupMessage(
+          `Do u want to merge ${otherItemSmLowerDesc.description} and ${editDesc}?`
+        );
+        setCurrentUpdatedArray(updatedArray);
+      } else {
+        // console.log(updatedArray);
+        dispatch(updateItemsArray(updatedArray));
+        dispatch(updateDesc(""));
+      }
+    } else if (!popupResult && popupMessage.includes("Edit")) {
+      const update = items.map((item) =>
+        checkSameId(item, currentItem.id) ? { ...item, isEdited: false } : item
+      );
+      // console.log(update);
+      dispatch(updateItemsArray(update));
+      dispatch(updateDesc(""));
     }
 
     /////////////////////////
     // For condition when user enters no for Do u mean item??
     else {
-      setShowPopup(false);
       dispatch(addItem(currentItem));
-      setCurrentItem("");
     }
   }
 
@@ -214,17 +274,16 @@ export default function App() {
         toLowerCase(item.description) === toLowerCase(newItem.description)
     );
 
+    const conditionSmDescSmPacked = (item) =>
+      item.description === newItem.description &&
+      item.packed === newItem.packed;
+
     if (existSmDesc) {
-      const samePacked = items.find(
-        (item) =>
-          item.description === newItem.description &&
-          item.packed === newItem.packed
-      );
+      const samePacked = items.find(conditionSmDescSmPacked);
 
       if (samePacked) {
         const update = items.map((item) =>
-          item.description === newItem.description &&
-          item.packed === newItem.packed
+          conditionSmDescSmPacked(item)
             ? {
                 ...item,
                 quantity: item.quantity + newItem.quantity,
@@ -233,33 +292,32 @@ export default function App() {
         );
         dispatch(updateItemsArray(update));
       } else {
-        setShowPopup(true);
+        dispatch(setShowPopup(true));
         setPopupMessage(
           `This item is already packed. Do u want ${existSmDesc.description} packed??`
         );
-        setCurrentItem(newItem);
+        dispatch(setCurrentItem(newItem));
       }
     } else if (existSmLowerDesc) {
-      setShowPopup(true);
+      dispatch(setShowPopup(true));
       setPopupMessage(`Do u mean ${existSmLowerDesc.description}??`);
-      setCurrentItem(newItem);
+      dispatch(setCurrentItem(newItem));
     } else {
       dispatch(addItem(newItem));
-      setCurrentItem("");
     }
   }
 
   function handleItemsQty(id, type) {
-    const updatedItem = items.find((item) => item.id === id);
+    const updatedItem = items.find((item) => checkSameId(item, id));
     if (type === "inc") {
       const update = items.map((item) =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+        checkSameId(item, id) ? { ...item, quantity: item.quantity + 1 } : item
       );
       dispatch(updateItemsArray(update));
     } else {
       if (updatedItem.quantity !== 1) {
         const update = items.map((item) =>
-          item.id === id
+          checkSameId(item, id)
             ? {
                 ...item,
                 quantity: item.quantity - 1,
@@ -274,20 +332,18 @@ export default function App() {
   }
 
   function handleDeleteItem(id) {
-    const deleteditem = items.find((item) => item.id === id);
-
-    setShowPopup(true);
+    const deleteditem = items.find((item) => checkSameId(item, id));
+    dispatch(setShowPopup(true));
     setPopupMessage(`Do u want to delete ${deleteditem.description}?`);
-    setCurrentItem(deleteditem);
+    dispatch(setCurrentItem(deleteditem));
   }
 
   function handleToggleItem(id) {
-    // else same logic
     const updatedItems = items.map((item) => {
-      return item.id === id ? { ...item, packed: !item.packed } : item;
+      return checkSameId(item, id) ? { ...item, packed: !item.packed } : item;
     });
 
-    const toggleItem = updatedItems.find((item) => item.id === id);
+    const toggleItem = updatedItems.find((item) => checkSameId(item, id));
     if (toggleItem.packed === true) document.querySelector(".btn");
 
     // For finding if there exists exact same item as toggle item (case-sensitive)
@@ -305,7 +361,7 @@ export default function App() {
     if (otherItemSmDesc && otherItemSmDesc.packed === toggleItem.packed) {
       const update = updatedItems
         .map((item) =>
-          item.id === id
+          checkSameId(item, id)
             ? { ...item, quantity: item.quantity + otherItemSmDesc.quantity }
             : item
         )
@@ -316,11 +372,11 @@ export default function App() {
       otherItemSmLowerDesc &&
       otherItemSmLowerDesc.packed === toggleItem.packed
     ) {
-      setShowPopup(true);
+      dispatch(setShowPopup(true));
       setPopupMessage(
         `Do u want to merge ${otherItemSmLowerDesc.description} and ${toggleItem.description}?`
       );
-      setCurrentItem(toggleItem);
+      dispatch(setCurrentItem(toggleItem));
       setCurrentUpdatedArray(updatedItems);
     } else {
       dispatch(updateItemsArray(updatedItems));
@@ -328,9 +384,22 @@ export default function App() {
   }
 
   function handleClearItems() {
-    setShowPopup(true);
-    setPopupMessage("Are you sure you want delete all the items?");
+    dispatch(setShowPopup(true));
+    setPopupMessage("Are you sure you want to delete all the items?");
   }
+
+  function handleEditItem(id) {
+    const editItem = items.find((item) => checkSameId(item, id));
+    dispatch(updateDesc(editItem.description));
+    // const update = items.map((item) =>
+    //   editItem ? { ...item, isEdited: true } : item
+    // );
+    // dispatch(updateItemsArray(update));
+    dispatch(setShowPopup(true));
+    dispatch(setCurrentItem(editItem));
+    setPopupMessage("Edit Form");
+  }
+
   return (
     <div className="app">
       <Logo />
@@ -340,9 +409,13 @@ export default function App() {
         onDeleteItem={handleDeleteItem}
         onToggleItem={handleToggleItem}
         onClearItems={handleClearItems}
+        onEditItem={handleEditItem}
       />
       <Stats />
       {showPopup && <Popup message={popupMessage} handlePopup={handlePopup} />}
+      {showPopup && !popupMessage.includes("Edit") && (
+        <Popup message={popupMessage} handlePopup={handlePopup} />
+      )}
     </div>
   );
 }

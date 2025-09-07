@@ -6,6 +6,7 @@ export default function PackingList({
   onDeleteItem,
   onToggleItem,
   onClearItems,
+  onEditItem,
 }) {
   const [sortBy, setSortBy] = useState("input");
   const items = useSelector((state) => state.item.items);
@@ -31,6 +32,7 @@ export default function PackingList({
             onUpdateQty={onUpdateQty}
             onDeleteItem={onDeleteItem}
             onToggleItem={onToggleItem}
+            onEditItem={onEditItem}
             key={item.id}
           />
         ))}

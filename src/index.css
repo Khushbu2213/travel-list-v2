@@ -23,6 +23,21 @@ body {
   font-weight: 500;
 }
 
+.item-description {
+  position: relative;
+}
+
+.edit-item {
+  position: absolute;
+  top: -1.6rem;
+  font-size: 1.2rem;
+  color: #432309;
+  background-color: #ae917e;
+  border-radius: 1rem;
+  padding: 0.1rem 0.6rem;
+  font-weight: 700;
+}
+
 .app {
   width: 100%;
   height: 100vh;

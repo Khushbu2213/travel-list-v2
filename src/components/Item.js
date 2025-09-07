@@ -3,18 +3,27 @@ export default function Item({
   onUpdateQty,
   onDeleteItem,
   onToggleItem,
+  onEditItem,
 }) {
   return (
     <li>
+      {!item.packed && (
+        <button className="btn" onClick={() => onEditItem(item.id)}>
+          ✏️
+        </button>
+      )}
       <input
         type="checkbox"
         value={item.packed}
         checked={item.packed}
         onChange={() => onToggleItem(item.id)}
       ></input>
-      <span style={item.packed ? { textDecoration: "line-through" } : {}}>
-        {item.quantity} {item.description}
-      </span>
+      <div className="item-description">
+        {item.isEdited && <p className="edit-item">edited</p>}
+        <span style={item.packed ? { textDecoration: "line-through" } : {}}>
+          {item.quantity} {item.description}
+        </span>
+      </div>
 
       {!item.packed && (
         <>

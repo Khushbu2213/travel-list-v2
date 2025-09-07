@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 // import Popup from "./Popup";
 
 export default function Form({ onAddItems }) {
-  const { items } = useSelector((state) => state.item);
+  // const { items } = useSelector((state) => state.item.items);
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState(1);
 
@@ -17,6 +17,7 @@ export default function Form({ onAddItems }) {
     const newItem = {
       description,
       quantity,
+      isEdited: false,
       packed: false,
       id: `${Date.now()}-${Math.random()}`,
     };
