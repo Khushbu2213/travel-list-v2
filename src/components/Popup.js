@@ -1,16 +1,20 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 import "./../Popup.css";
-import { updateDesc } from "../slice/itemSlice";
 // import { useState } from "react";
 
-function Popup({ message, handlePopup }) {
+function Popup({ message, handlePopup, editDescription, setEditDescription }) {
   const currentItem = useSelector((state) => state.item.currentItem);
-  const editDesc = useSelector((state) => state.item.editDesc);
-  const dispatch = useDispatch();
-
+  const inputRef = useRef();
   const editFormMsg = message.includes("Edit");
 
-  const disabledButton = editDesc === currentItem?.description;
+  useEffect(() => {
+    if (editFormMsg && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editFormMsg]);
+
+  const disabledButton = editDescription === currentItem?.description;
 
   return (
     <div className="popup-overlay">
@@ -19,12 +23,12 @@ function Popup({ message, handlePopup }) {
         {editFormMsg && (
           <form>
             <input
+              ref={inputRef}
               className="popup-input"
               type="text"
               placeholder="item"
-              defaultValue={currentItem.description}
-              value={editDesc}
-              onChange={(e) => dispatch(updateDesc(e.target.value))}
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
             />
           </form>
         )}

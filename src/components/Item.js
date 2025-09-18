@@ -8,7 +8,7 @@ export default function Item({
   return (
     <li>
       {!item.packed && (
-        <button className="btn" onClick={() => onEditItem(item.id)}>
+        <button className="btn" onClick={() => onEditItem(item)}>
           ✏️
         </button>
       )}

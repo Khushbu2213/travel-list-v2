@@ -1,13 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
-import setLocalStorage from "../components/helper";
+import setLocalStorage from "../utils/helper";
 
 const storedItems = localStorage.getItem("items");
 
 const initialState = {
   items: storedItems ? JSON.parse(storedItems) : [],
   showPopup: false,
-  currentItem: null,
-  editDesc: "",
+  currentItem: {},
 };
 
 const itemSlice = createSlice({
@@ -20,19 +19,27 @@ const itemSlice = createSlice({
     setCurrentItem: (state, action) => {
       state.currentItem = action.payload;
     },
+    updateCurrentItemPacked: (state, action) => {
+      state.currentItem.packed = action.payload;
+    },
+    updateCurrentItemDesc: (state, action) => {
+      state.currentItem.description = action.payload;
+    },
     addItem: (state, action) => {
       state.items.push(action.payload);
       state.showPopup = false;
       state.currentItem = null;
+      state.editDesc = "";
       setLocalStorage(state.items);
     },
-    updateDesc: (state, action) => {
-      state.editDesc = action.payload;
-    },
+    // updateDesc: (state, action) => {
+    //   state.editDesc = action.payload;
+    // },
     updateItemsArray: (state, action) => {
       state.items = action.payload;
       state.showPopup = false;
       state.currentItem = null;
+      state.editDesc = "";
       setLocalStorage(state.items);
     },
     deleteItem: (state, action) => {
@@ -52,12 +59,14 @@ const itemSlice = createSlice({
 
 export const {
   updateItemsArray,
-  updateDesc,
+  // updateDesc,
   addItem,
   deleteItem,
   clearItems,
   setShowPopup,
   setCurrentItem,
+  updateCurrentItemPacked,
+  updateCurrentItemDesc,
 } = itemSlice.actions;
 
 export default itemSlice.reducer;
